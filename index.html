@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>خريطة المخرجات والمواعيد</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&family=Cairo:wght@400;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Tajawal', 'Cairo', sans-serif;
+    background: linear-gradient(135deg, #0f1729 0%, #1a2744 50%, #0d1b3a 100%);
+    min-height: 100vh;            /* fallback */
+    min-height: 100dvh;           /* iOS: يتجنّب قفزة شريط العنوان */
+    color: #e8edf7;
+    direction: rtl;
+    padding: 48px 20px;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .container { max-width: 900px; margin: 0 auto; }
+
+  .header { text-align: center; margin-bottom: 40px; }
+
+  .header .eyebrow {
+    display: inline-block;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: #7da2d9;
+    background: rgba(125, 162, 217, 0.12);
+    border: 1px solid rgba(125, 162, 217, 0.25);
+    padding: 7px 18px;
+    border-radius: 100px;
+    margin-bottom: 20px;
+    font-weight: 600;
+  }
+
+  .header h1 {
+    font-size: 38px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #ffffff 0%, #9cc0f5 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 14px;
+    line-height: 1.3;
+  }
+
+  .header p { color: #93a4c4; font-size: 16px; }
+
+  .today-banner {
+    text-align: center;
+    margin-bottom: 48px;
+    color: #7da2d9;
+    font-size: 14px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 12px;
+    width: 100%;
+  }
+
+  .timeline { position: relative; padding-right: 40px; }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    right: 12px; top: 12px; bottom: 12px;
+    width: 2px;
+    background: linear-gradient(180deg, #4a7bc8 0%, #5a4bc8 50%, #c84b9e 100%);
+    opacity: 0.5;
+  }
+
+  .item {
+    position: relative;
+    margin-bottom: 28px;
+    opacity: 0;
+    transform: translateX(30px);
+    animation: slideIn 0.6s ease forwards;
+  }
+  .item:nth-child(1){animation-delay:.1s} .item:nth-child(2){animation-delay:.2s}
+  .item:nth-child(3){animation-delay:.3s} .item:nth-child(4){animation-delay:.4s}
+  .item:nth-child(5){animation-delay:.5s} .item:nth-child(6){animation-delay:.6s}
+  .item:nth-child(7){animation-delay:.7s}
+
+  @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+
+  .item .dot {
+    position: absolute;
+    right: -35px; top: 22px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 3px solid #0f1729;
+    box-shadow: 0 0 0 3px var(--accent-glow);
+    z-index: 2;
+  }
+
+  .card {
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 18px;
+    padding: 22px 24px;
+    transition: all 0.3s ease;
+    -webkit-backdrop-filter: blur(12px);   /* مطلوب لـ Safari / iOS */
+    backdrop-filter: blur(12px);
+    border-right: 4px solid var(--accent);
+  }
+
+  /* يُفعّل المرور فقط على الأجهزة الداعمة له (تجنّب hover اللاصق على iPhone) */
+  @media (hover: hover) {
+    .card:hover {
+      background: rgba(255, 255, 255, 0.07);
+      transform: translateX(-6px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  /* استجابة لمسية فورية عند الضغط على iPhone */
+  .card:active {
+    background: rgba(255, 255, 255, 0.08);
+    transform: scale(0.985);
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .card .title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #f0f4fc;
+    line-height: 1.6;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .card .date {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--accent-glow);
+    color: var(--accent-text);
+    font-size: 14px;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: 100px;
+    white-space: nowrap;
+    border: 1px solid var(--accent-border);
+    direction: rtl;
+  }
+  .card .date .num { direction: ltr; unicode-bidi: embed; font-variant-numeric: tabular-nums; }
+  .card .date svg { width: 15px; height: 15px; }
+
+  .card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 12px;
+    color: var(--accent-text);
+    background: rgba(255,255,255,0.05);
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+
+  /* بطاقة العدّاد التنازلي */
+  .countdown {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px;
+    border-radius: 14px;
+    font-weight: 800;
+    border: 1px solid;
+    transition: background .3s ease, color .3s ease, border-color .3s ease;
+  }
+  .countdown .cd-num {
+    font-size: 28px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+    min-width: 2ch;
+    text-align: center;
+    display: inline-block;
+  }
+  .countdown .cd-num.settle { animation: cdSettle .55s ease; }
+  @keyframes cdSettle {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.45); }
+    100% { transform: scale(1); }
+  }
+  .countdown .cd-label {
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0.85;
+    line-height: 1.3;
+  }
+  .countdown svg { width: 22px; height: 22px; opacity: 0.9; }
+
+  .cd-urgent { background: rgba(232,76,76,0.14); color: #ff8b8b; border-color: rgba(232,76,76,0.35); }
+  .cd-soon   { background: rgba(232,160,60,0.14); color: #ffc878; border-color: rgba(232,160,60,0.35); }
+  .cd-ok     { background: rgba(76,200,150,0.14); color: #7fe8bc; border-color: rgba(76,200,150,0.35); }
+  .cd-done   { background: rgba(120,140,170,0.12); color: #aebdd6; border-color: rgba(120,140,170,0.3); }
+
+  .pulse { animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+
+  .footer {
+    text-align: center;
+    margin-top: 56px;
+    padding-top: 28px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    color: #6d7e9e;
+    font-size: 13px;
+  }
+
+  @media (max-width: 600px) {
+    body { padding-top: 28px; padding-bottom: max(28px, env(safe-area-inset-bottom)); }
+    .header { margin-bottom: 28px; }
+    .header h1 { font-size: 26px; }
+    .header p { font-size: 14px; }
+    .today-banner { margin-bottom: 32px; font-size: 13px; }
+    .timeline { padding-right: 30px; }
+    .timeline::before { right: 11px; }
+    .item .dot { right: -27px; }
+    .card { padding: 18px; }
+    .card-top { gap: 10px; }
+    .card .title { font-size: 15px; min-width: 140px; }
+    .card .date { font-size: 13px; padding: 7px 11px; }
+    .card-bottom { margin-top: 14px; gap: 10px; }
+    .countdown { padding: 9px 14px; gap: 8px; }
+    .countdown .cd-num { font-size: 24px; }
+    .countdown svg { width: 19px; height: 19px; }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <span class="eyebrow">جدول التسليمات · 2026</span>
+      <h1>خريطة المخرجات والمواعيد المستهدفة</h1>
+      <p>عدّاد تنازلي مباشر للأيام المتبقية حتى كل تسليم</p>
+    </div>
+
+    <div class="today-banner" id="todayBanner">— جارٍ تحديد التاريخ —</div>
+
+    <div class="timeline">
+
+      <div class="item" data-date="2026-06-15" style="--accent:#4a9fc8; --accent-glow:rgba(74,159,200,0.15); --accent-text:#7fc4e8; --accent-border:rgba(74,159,200,0.3);">
+        <div class="dot"></div>
+        <div class="card">
+          <div class="card-top">
+            <div class="title">تسليم الصور النهائية لجميع الفروع</div>
+            <div class="date">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span class="num">15</span> يونيو <span class="num">2026</span>
+            </div>
+          </div>
+          <div class="card-bottom">
+            <span class="tag">📸 تصوير ميداني</span>
+            <div class="countdown"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="item" data-date="2026-06-15" style="--accent:#5a8fd8; --accent-glow:rgba(90,143,216,0.15); --accent-text:#8fb4ed; --accent-border:rgba(90,143,216,0.3);">
+        <div class="dot"></div>
+        <div class="card">
+          <div class="card-top">
+            <div class="title">تسليم الهوية البصرية وحزمة تصاميم السوشيال ميديا</div>
+            <div class="date">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span class="num">15</span> يونيو <span class="num">2026</span>
+            </div>
+          </div>
+          <div class="card-bottom">
+            <span class="tag">🎨 هوية بصرية</span>
+            <div class="countdown"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="item" data-date="2026-06-17" style="--accent:#6a7fe0; --accent-glow:rgba(106,127,224,0.15); --accent-text:#9aa9f0; --accent-border:rgba(106,127,224,0.3);">
+        <div class="dot"></div>
+        <div class="card">
+          <div class="card-top">
+            <div class="title">تسليم الموقع الإلكتروني الأول</div>
+            <div class="date">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span class="num">17</span> يونيو <span class="num">2026</span>
+            </div>
+          </div>
+          <div class="card-bottom">
+            <span class="tag">🌐 موقع إلكتروني</span>
+            <div class="countdown"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="item" data-date="2026-06-25" style="--accent:#7a6fe0; --accent-glow:rgba(122,111,224,0.15); --accent-text:#a99af0; --accent-border:rgba(122,111,224,0.3);">
+        <div class="dot"></div>
+        <div class="card">
+          <div class="card-top">
+            <div class="title">تسليم مشروع الربط المحاسبي لنقاط البيع</div>
+            <div class="date">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span class="num">25</span> يونيو <span class="num">2026</span>
+            </div>
+          </div>
+          <div class="card-bottom">
+            <span class="tag">🔗 ربط محاسبي</span>
+            <div class="countdown"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="item" data-date="2026-07-01" style="--accent:#9a5fd0; --accent-glow:rgba(154,95,208,0.15); --accent-text:#c08aec; --accent-border:rgba(154,95,208,0.3);">
+        <div class="dot"></div>
+        <div class="card">
+          <div class="card-top">
+            <div class="title">تسليم مشروع Odoo بالكامل، شاملاً الإعداد، رفع البيانات، التدريب، التمكين، والتشغيل في جميع الفروع</div>
+            <div class="date">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span class="num">1</span> يوليو <span class="num">2026</span>
+            </div>
+          </div>
+          <div class="card-bottom">
+            <span class="tag">⚙️ نظام Odoo متكامل</span>
+            <div class="countdown"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="item" data-date="2026-07-12" style="--accent:#b84bb0; --accent-glow:rgba(184,75,176,0.15); --accent-text:#dc8ad6; --accent-border:rgba(184,75,176,0.3);">
+        <div class="dot"></div>
+        <div class="card">
+          <div class="card-top">
+            <div class="title">تسليم الموقع الإلكتروني الثاني</div>
+            <div class="date">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span class="num">12</span> يوليو <span class="num">2026</span>
+            </div>
+          </div>
+          <div class="card-bottom">
+            <span class="tag">🌐 موقع إلكتروني</span>
+            <div class="countdown"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="item" data-date="2026-07-12" style="--accent:#c84b9e; --accent-glow:rgba(200,75,158,0.15); --accent-text:#ec8acd; --accent-border:rgba(200,75,158,0.3);">
+        <div class="dot"></div>
+        <div class="card">
+          <div class="card-top">
+            <div class="title">تسليم الموقع الإلكتروني الثالث</div>
+            <div class="date">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span class="num">12</span> يوليو <span class="num">2026</span>
+            </div>
+          </div>
+          <div class="card-bottom">
+            <span class="tag">🌐 موقع إلكتروني</span>
+            <div class="countdown"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer">
+      دبي في القاهرة · العدّاد يُحتسب تلقائيًا من تاريخ اليوم
+    </div>
+  </div>
+
+<script>
+  const arMonths = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const arDays = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+
+  const clockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+
+  const START_FROM = 70;     // الرقم الكبير الذي يبدأ منه العدّ
+  const DURATION   = 2500;   // مدة العدّ (أبطأ وأوضح للعميل)
+
+  function startOfDay(d) {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+
+  // يحوّل "YYYY-MM-DD" إلى تاريخ محلي في منتصف الليل،
+  // لتفادي تفسير المتصفّح للنص كتوقيت UTC (الذي يُحدِث فرق يوم كامل في بعض المناطق الزمنية)
+  function parseLocalDate(str) {
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  // حركة العدّ التنازلي: من رقم كبير (70) نزولاً إلى عدد الأيام الفعلي
+  function animateCount(el, end, duration) {
+    const start = Math.max(START_FROM, end);   // يضمن أن العدّ ينزل دائمًا حتى لو كان الهدف كبيرًا
+    const startTime = performance.now();
+    function frame(now) {
+      const p = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);   // ease-out: يتباطأ عند الاقتراب من الرقم النهائي
+      el.textContent = Math.round(start + (end - start) * eased);
+      if (p < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        el.textContent = end;
+        // ارتدادة بسيطة عند الوصول للرقم النهائي لجذب الانتباه
+        el.classList.add('settle');
+        el.addEventListener('animationend', () => el.classList.remove('settle'), { once: true });
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function render(animate) {
+    const now = new Date();
+    const today = startOfDay(now);
+
+    const banner = document.getElementById('todayBanner');
+    banner.innerHTML = 'اليوم: ' + arDays[now.getDay()] + ' <span style="direction:ltr;display:inline-block">' +
+      now.getDate() + '</span> ' + arMonths[now.getMonth()] +
+      ' <span style="direction:ltr;display:inline-block">' + now.getFullYear() + '</span>';
+
+    document.querySelectorAll('.item').forEach((item, i) => {
+      const target = parseLocalDate(item.dataset.date);
+      const diffDays = Math.round((target - today) / 86400000);
+      const cd = item.querySelector('.countdown');
+
+      let cls, numText, label, isNumeric = false;
+
+      if (diffDays > 1) {
+        numText = diffDays;
+        label = '<span class="cd-label">يوم<br>متبقٍ</span>';
+        cls = diffDays <= 7 ? 'cd-urgent pulse' : (diffDays <= 14 ? 'cd-soon' : 'cd-ok');
+        isNumeric = true;
+      } else if (diffDays === 1) {
+        numText = 'غدًا';
+        label = '<span class="cd-label">يوم<br>واحد</span>';
+        cls = 'cd-urgent pulse';
+      } else if (diffDays === 0) {
+        numText = 'اليوم';
+        label = '<span class="cd-label">موعد<br>التسليم</span>';
+        cls = 'cd-urgent pulse';
+      } else {
+        numText = Math.abs(diffDays);
+        label = '<span class="cd-label">يوم<br>تأخير</span>';
+        cls = 'cd-done';
+        isNumeric = true;
+      }
+
+      cd.className = 'countdown ' + cls;
+      // يبدأ العرض بالرقم الكبير ثم ينزل تدريجيًا حتى الهدف
+      const initial = (isNumeric && animate) ? Math.max(START_FROM, numText) : numText;
+      cd.innerHTML = clockSvg + '<span class="cd-num">' + initial + '</span>' + label;
+
+      if (isNumeric && animate) {
+        const numEl = cd.querySelector('.cd-num');
+        // تأخير متدرّج بين البطاقات ليبدأ العدّ تتابعيًا
+        setTimeout(() => animateCount(numEl, numText, DURATION), 350 + i * 180);
+      }
+    });
+  }
+
+  render(true);
+  // إعادة الحساب كل ساعة (بدون حركة) لتحديث العدّاد عند تغيّر اليوم
+  setInterval(() => render(false), 3600000);
+</script>
+</body>
+</html>

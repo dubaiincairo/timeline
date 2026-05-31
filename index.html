@@ -7,6 +7,10 @@
 <meta name="description" content="عدّاد تنازلي مباشر للأيام المتبقية حتى كل تسليم — جدول تسليمات 2026 من دبي في القاهرة.">
 <meta name="theme-color" content="#0f1729">
 <link rel="canonical" href="https://timeline.dubaiincairo.com/">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script>document.documentElement.classList.add('js');</script>
 
 <!-- Open Graph (Facebook · WhatsApp · LinkedIn · Telegram · iMessage) -->
 <meta property="og:type" content="website">
@@ -104,16 +108,24 @@
   .item {
     position: relative;
     margin-bottom: 28px;
+  }
+  /* تُخفى البطاقات مبدئيًا فقط عند توفّر JavaScript، وتظهر عند دخولها مجال الرؤية أثناء التمرير */
+  .js .item {
     opacity: 0;
     transform: translateX(30px);
+  }
+  .js .item.in-view {
     animation: slideIn 0.6s ease forwards;
   }
-  .item:nth-child(1){animation-delay:.1s} .item:nth-child(2){animation-delay:.2s}
-  .item:nth-child(3){animation-delay:.3s} .item:nth-child(4){animation-delay:.4s}
-  .item:nth-child(5){animation-delay:.5s} .item:nth-child(6){animation-delay:.6s}
-  .item:nth-child(7){animation-delay:.7s}
 
   @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+
+  /* احترام تفضيل تقليل الحركة: إظهار فوري دون حركة */
+  @media (prefers-reduced-motion: reduce) {
+    .js .item { opacity: 1 !important; transform: none !important; animation: none !important; }
+    .pulse { animation: none !important; }
+    .countdown .cd-num.settle { animation: none !important; }
+  }
 
   .item .dot {
     position: absolute;
@@ -454,58 +466,102 @@
     requestAnimationFrame(frame);
   }
 
-  function render(animate) {
-    const now = new Date();
-    const today = startOfDay(now);
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    const banner = document.getElementById('todayBanner');
-    banner.innerHTML = 'اليوم: ' + arDays[now.getDay()] + ' <span style="direction:ltr;display:inline-block">' +
-      now.getDate() + '</span> ' + arMonths[now.getMonth()] +
-      ' <span style="direction:ltr;display:inline-block">' + now.getFullYear() + '</span>';
+  // يحسب حالة العدّاد لبطاقة واحدة (عدد الأيام، اللون، النص)
+  function computeCountdown(item) {
+    const today = startOfDay(new Date());
+    const target = parseLocalDate(item.dataset.date);
+    const diffDays = Math.round((target - today) / 86400000);
 
-    document.querySelectorAll('.item').forEach((item, i) => {
-      const target = parseLocalDate(item.dataset.date);
-      const diffDays = Math.round((target - today) / 86400000);
-      const cd = item.querySelector('.countdown');
+    let cls, numText, label, isNumeric = false;
 
-      let cls, numText, label, isNumeric = false;
-
-      if (diffDays > 1) {
-        numText = diffDays;
-        label = '<span class="cd-label">يوم<br>متبقٍ</span>';
-        cls = diffDays <= 7 ? 'cd-urgent pulse' : (diffDays <= 14 ? 'cd-soon' : 'cd-ok');
-        isNumeric = true;
-      } else if (diffDays === 1) {
-        numText = 'غدًا';
-        label = '<span class="cd-label">يوم<br>واحد</span>';
-        cls = 'cd-urgent pulse';
-      } else if (diffDays === 0) {
-        numText = 'اليوم';
-        label = '<span class="cd-label">موعد<br>التسليم</span>';
-        cls = 'cd-urgent pulse';
-      } else {
-        numText = Math.abs(diffDays);
-        label = '<span class="cd-label">يوم<br>تأخير</span>';
-        cls = 'cd-done';
-        isNumeric = true;
-      }
-
-      cd.className = 'countdown ' + cls;
-      // يبدأ العرض بالرقم الكبير ثم ينزل تدريجيًا حتى الهدف
-      const initial = (isNumeric && animate) ? Math.max(START_FROM, numText) : numText;
-      cd.innerHTML = clockSvg + '<span class="cd-num">' + initial + '</span>' + label;
-
-      if (isNumeric && animate) {
-        const numEl = cd.querySelector('.cd-num');
-        // تأخير متدرّج بين البطاقات ليبدأ العدّ تتابعيًا
-        setTimeout(() => animateCount(numEl, numText, DURATION), 350 + i * 180);
-      }
-    });
+    if (diffDays > 1) {
+      numText = diffDays;
+      label = '<span class="cd-label">يوم<br>متبقٍ</span>';
+      cls = diffDays <= 7 ? 'cd-urgent pulse' : (diffDays <= 14 ? 'cd-soon' : 'cd-ok');
+      isNumeric = true;
+    } else if (diffDays === 1) {
+      numText = 'غدًا';
+      label = '<span class="cd-label">يوم<br>واحد</span>';
+      cls = 'cd-urgent pulse';
+    } else if (diffDays === 0) {
+      numText = 'اليوم';
+      label = '<span class="cd-label">موعد<br>التسليم</span>';
+      cls = 'cd-urgent pulse';
+    } else {
+      numText = Math.abs(diffDays);
+      label = '<span class="cd-label">يوم<br>تأخير</span>';
+      cls = 'cd-done';
+      isNumeric = true;
+    }
+    return { cls, numText, label, isNumeric };
   }
 
-  render(true);
-  // إعادة الحساب كل ساعة (بدون حركة) لتحديث العدّاد عند تغيّر اليوم
-  setInterval(() => render(false), 3600000);
+  function updateBanner() {
+    const now = new Date();
+    document.getElementById('todayBanner').innerHTML =
+      'اليوم: ' + arDays[now.getDay()] + ' <span style="direction:ltr;display:inline-block">' +
+      now.getDate() + '</span> ' + arMonths[now.getMonth()] +
+      ' <span style="direction:ltr;display:inline-block">' + now.getFullYear() + '</span>';
+  }
+
+  const items = Array.prototype.slice.call(document.querySelectorAll('.item'));
+
+  // يرسم البطاقة؛ وإن لم تُكشَف بعد وستتحرّك، يعرض الرقم الكبير (70) كنقطة بداية للعدّ
+  function paint(item) {
+    const info = computeCountdown(item);
+    item._cd = info;
+    const cd = item.querySelector('.countdown');
+    cd.className = 'countdown ' + info.cls;
+    const willAnimate = info.isNumeric && !prefersReduced && !item._revealed;
+    const shown = willAnimate ? Math.max(START_FROM, info.numText) : info.numText;
+    cd.innerHTML = clockSvg + '<span class="cd-num">' + shown + '</span>' + info.label;
+  }
+
+  // عند دخول البطاقة مجال الرؤية: يبدأ الانزلاق ثم العدّ التنازلي — ليراه العميل أثناء التمرير
+  function revealItem(item) {
+    if (item._revealed) return;
+    item._revealed = true;
+    item.classList.add('in-view');
+    const info = item._cd;
+    if (info && info.isNumeric && !prefersReduced) {
+      animateCount(item.querySelector('.cd-num'), info.numText, DURATION);
+    }
+  }
+
+  // إعادة الحساب (بدون حركة) لتحديث العدّاد عند تغيّر اليوم
+  function refresh() {
+    updateBanner();
+    items.forEach(paint);
+  }
+
+  updateBanner();
+
+  const noScrollAnim = prefersReduced || !('IntersectionObserver' in window);
+  if (noScrollAnim) {
+    // كشف فوري للجميع (وضع تقليل الحركة أو المتصفحات القديمة)
+    items.forEach(function (item) { item._revealed = true; item.classList.add('in-view'); });
+  }
+
+  items.forEach(paint);
+
+  if (!noScrollAnim) {
+    const observer = new IntersectionObserver(function (entries) {
+      const shown = entries.filter(function (e) { return e.isIntersecting; }).map(function (e) { return e.target; });
+      // ترتيب من الأعلى للأسفل لتتابع لطيف عند ظهور عدّة بطاقات معًا
+      shown.sort(function (a, b) { return items.indexOf(a) - items.indexOf(b); });
+      shown.forEach(function (item, i) {
+        observer.unobserve(item);
+        setTimeout(function () { revealItem(item); }, i * 140);
+      });
+    }, { threshold: 0.3, rootMargin: '0px 0px -12% 0px' });
+
+    items.forEach(function (item) { observer.observe(item); });
+  }
+
+  // إعادة الحساب كل ساعة لتحديث العدّاد عند تغيّر اليوم (دون إعادة الحركة)
+  setInterval(refresh, 3600000);
 </script>
 </body>
 </html>
